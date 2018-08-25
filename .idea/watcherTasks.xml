@@ -20,7 +20,7 @@
         </array>
       </option>
       <option name="outputFromStdout" value="false" />
-      <option name="program" value="C:\\Python27\\Scripts\\platformio.exe" />
+      <option name="program" value="/Users/alex/.platformio/penv/bin/platformio" />
       <option name="scopeName" value="Project Files" />
       <option name="trackOnlyRoot" value="false" />
       <option name="workingDir" value="$PROJECT_DIR$" />

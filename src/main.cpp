@@ -1,5 +1,7 @@
 #include "Arduino.h"
 #include <SPI.h>
+#include "color_sensor.h"
+#include "scale.h"
 
 const byte regOut = 10;
 const byte regIn = 9;
@@ -67,7 +69,8 @@ byte eState = 0;
 unsigned long milli;
 unsigned long startCatch;
 
-void spiDo() {
+void spiDo()
+{
     digitalWrite(regIn, LOW);
     digitalWrite(regIn, HIGH);
     digitalWrite(regOut, LOW);
@@ -79,15 +82,19 @@ void spiDo() {
 }
 
 void setup() {
+
     Serial.begin(115200);
     SPI.begin();
     pinMode(regOut, OUTPUT);
     pinMode(regIn, OUTPUT);
 
-    color_sensor_setup();
-    scale_setup();
+//    color_sensor_setup();
+//    scale_setup();
+
 
     return;
+
+
 
     delay(500);
     spiDo();
@@ -114,31 +121,39 @@ void setup() {
 }
 
 void loop() {
-    color_sensor_loop();
-    scale_loop();
+//    color_sensor_loop();
+//    scale_loop();
 
     milli = millis();
     spiDo();
 
     move = 0;
-    if (catchingStep != CATCH_NONE) {
-        if (catchingStep == CATCH_U2D) {
+    if (catchingStep != CATCH_NONE)
+    {
+        if (catchingStep == CATCH_U2D)
+        {
             move = MD;
-            if (end & ED) {
+            if (end & ED)
+            {
                 Serial.print("CATCH DOWN TO UP");
                 catchingStep = CATCH_D2U;
             }
-        } else if (catchingStep == CATCH_D2U) {
+        }
+        else if (catchingStep == CATCH_D2U)
+        {
             move = MU | CA;
             if (end & EU)
                 catchingStep = CATCH_UP;
-        } else if (catchingStep == CATCH_UP) {
+        }
+        else if (catchingStep == CATCH_UP)
+        {
             move = CA;
             if (joy & JU)
                 catchingStep = CATCH_NONE;
         }
     }
-    if (catchingStep == CATCH_NONE || catchingStep == CATCH_D2U || catchingStep == CATCH_UP) {
+    if (catchingStep == CATCH_NONE || catchingStep == CATCH_D2U || catchingStep == CATCH_UP)
+    {
         if (joy & JL)move |= ML;
         if (joy & JR)move |= MR;
         if (joy & JF)move |= MF;
@@ -154,7 +169,8 @@ void loop() {
     if (end & ED)move &= ~MD;
     if (end & EU)move &= ~MU;
 
-    if (joy != jState || end != eState) {
+    if (joy != jState || end != eState)
+    {
         eState = end;
         jState = joy;
         Serial.print("JOY: ");

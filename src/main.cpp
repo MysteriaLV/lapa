@@ -69,14 +69,23 @@ byte eState = 0;
 unsigned long milli;
 unsigned long startCatch;
 
-void spiDo()
-{
+void spiDo() {
+    // PL to LOW -> async load via D0-D7
     digitalWrite(regIn, LOW);
+    // PL to HIGH -> shifting and serial loading
     digitalWrite(regIn, HIGH);
+
+    //closing output latch
     digitalWrite(regOut, LOW);
+
+    // write current state & read 1st input register - joystick
     joy = SPI.transfer(move);
+    // write current state & read 2nd input register - terminals
     end = SPI.transfer(move);
+
+    // releasing output latch
     digitalWrite(regOut, HIGH);
+
     joy = ~(joy & B00111111);
     end = ~(end & B00111111);
 }
@@ -88,14 +97,14 @@ void setup() {
     pinMode(regOut, OUTPUT);
     pinMode(regIn, OUTPUT);
 
+//    TODO
 //    color_sensor_setup();
 //    scale_setup();
 
 
-    return;
-
-
-
+/*
+ * Obsolete/unused code
+ *
     delay(500);
     spiDo();
     while (!(end & EU)) // move to up
@@ -118,7 +127,8 @@ void setup() {
 
     //take the latch pin high so the LEDs will light up:
     digitalWrite(latchPin, HIGH);
-}
+*/
+ }
 
 void loop() {
 //    color_sensor_loop();
@@ -128,32 +138,24 @@ void loop() {
     spiDo();
 
     move = 0;
-    if (catchingStep != CATCH_NONE)
-    {
-        if (catchingStep == CATCH_U2D)
-        {
+    if (catchingStep != CATCH_NONE) {
+        if (catchingStep == CATCH_U2D) {
             move = MD;
-            if (end & ED)
-            {
+            if (end & ED) {
                 Serial.print("CATCH DOWN TO UP");
                 catchingStep = CATCH_D2U;
             }
-        }
-        else if (catchingStep == CATCH_D2U)
-        {
+        } else if (catchingStep == CATCH_D2U) {
             move = MU | CA;
             if (end & EU)
                 catchingStep = CATCH_UP;
-        }
-        else if (catchingStep == CATCH_UP)
-        {
+        } else if (catchingStep == CATCH_UP) {
             move = CA;
             if (joy & JU)
                 catchingStep = CATCH_NONE;
         }
     }
-    if (catchingStep == CATCH_NONE || catchingStep == CATCH_D2U || catchingStep == CATCH_UP)
-    {
+    if (catchingStep == CATCH_NONE || catchingStep == CATCH_D2U || catchingStep == CATCH_UP) {
         if (joy & JL)move |= ML;
         if (joy & JR)move |= MR;
         if (joy & JF)move |= MF;
@@ -169,24 +171,24 @@ void loop() {
     if (end & ED)move &= ~MD;
     if (end & EU)move &= ~MU;
 
-    if (joy != jState || end != eState)
-    {
+    if (joy != jState || end != eState) {
         eState = end;
         jState = joy;
         Serial.print("JOY: ");
-        if (joy & JL)Serial.print("L ");
-        if (joy & JR)Serial.print("R ");
-        if (joy & JF)Serial.print("F ");
-        if (joy & JB)Serial.print("B ");
-        if (joy & JU)Serial.print("U ");
-        if (joy & JD)Serial.print("D ");
-        Serial.print("END: ");
-        if (end & EL)Serial.print("L ");
-        if (end & ER)Serial.print("R ");
-        if (end & EF)Serial.print("F ");
-        if (end & EB)Serial.print("B ");
-        if (end & EU)Serial.print("U ");
-        if (end & ED)Serial.print("D ");
+        if (joy & JL)Serial.print("L");
+        if (joy & JR)Serial.print("R");
+        if (joy & JF)Serial.print("F");
+        if (joy & JB)Serial.print("B");
+        if (joy & JU)Serial.print("U");
+        if (joy & JD)Serial.print("D");
+        Serial.print("\tEND: ");
+        if (end & EL)Serial.print("L");
+        if (end & ER)Serial.print("R");
+        if (end & EF)Serial.print("F");
+        if (end & EB)Serial.print("B");
+        if (end & EU)Serial.print("U");
+        if (end & ED)Serial.print("D");
+        Serial.print("\tC-STEP: ");
         Serial.println(catchingStep);
     }
     delay(10);

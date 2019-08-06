@@ -5,7 +5,7 @@
 #include <NewPing.h>
 #include "HX711.h"
 #include <Tic.h>
- 
+
 
 // ============= sonar ===========================
 
@@ -13,11 +13,11 @@
 #define US_ECHO_PIN 17
 #define US_MAX_DISTANCE 200
 
-NewPing sonar(US_TRIGGER_PIN, US_ECHO_PIN, US_MAX_DISTANCE); 
+NewPing sonar(US_TRIGGER_PIN, US_ECHO_PIN, US_MAX_DISTANCE);
 
 // ============= scales ===========================
 
-HX711 scale(A1, A0); 
+HX711 scale(A1, A0);
 
 float tolerance = 10;
 float minWeightToDetect = 20;
@@ -137,221 +137,153 @@ void spiDo() {
 // ======================= scale stuff ==========================
 // ==============================================================
 
-void setupScales(){
-  Serial.println("Setup scales");
+void setupScales() {
+    Serial.println("Setup scales");
     scale.set_scale(2280.f);
     delay(500); // this is for scale to warmup
-    scale.tare();  
+    scale.tare();
 }
 
-void loopScales () {
+void loopScales() {
+    Serial.print("Measure:\t");
 
- Serial.print("Measure:\t");
+    currentWeightValue = scale.get_units(2);
+    //digitalWrite (dSuccess, HIGH);
+    Serial.print("currentWeightValue:\t");
+    Serial.println(currentWeightValue, 1);
 
-  currentWeightValue = scale.get_units(2);
-  //digitalWrite (dSuccess, HIGH); 
-  Serial.print("currentWeightValue:\t");
-  Serial.println(currentWeightValue, 1);
+    // if all items were removed manually();
+    if (currentItem > 0 && abs(currentWeightValue) < tolerance) {
 
-  // if all items were removed manually();
-  if (currentItem > 0 && abs(currentWeightValue) < tolerance) {
-    
-    reset1();
-  }
-  else {
-  
-    currentWeightDelta = currentWeightValue - oldWeightValue;
-  
-    // if weight changed more than tolerance
-    if (abs(currentWeightDelta) > tolerance) {
-      Serial.print("Weight change detected:\t");
-      Serial.print("Calmdown:\t");
-      Serial.print(calmdownTime, 1);
-      Serial.println("ms:\t");
-      delay(calmdownTime);
-      currentWeightValue = scale.get_units(10);
-      currentWeightDelta = currentWeightValue - oldWeightValue;
-      
-      Serial.print("Weight measured raw / delta:\t");
-      Serial.print(currentWeightValue, 1);
-      Serial.print(" / ");
-      Serial.println(currentWeightDelta, 1);
-  
+        reset1();
+    } else {
 
-      if (currentWeightDelta > minWeightToDetect) {
-        itemDetected(currentWeightDelta);
-        previousItemWeight = currentWeightDelta;
-      }
-  
-      oldWeightValue = currentWeightValue;
-        
+        currentWeightDelta = currentWeightValue - oldWeightValue;
+
+        // if weight changed more than tolerance
+        if (abs(currentWeightDelta) > tolerance) {
+            Serial.print("Weight change detected:\t");
+            Serial.print("Calmdown:\t");
+            Serial.print(calmdownTime, 1);
+            Serial.println("ms:\t");
+            delay(calmdownTime);
+            currentWeightValue = scale.get_units(10);
+            currentWeightDelta = currentWeightValue - oldWeightValue;
+
+            Serial.print("Weight measured raw / delta:\t");
+            Serial.print(currentWeightValue, 1);
+            Serial.print(" / ");
+            Serial.println(currentWeightDelta, 1);
+
+
+            if (currentWeightDelta > minWeightToDetect) {
+                itemDetected(currentWeightDelta);
+                previousItemWeight = currentWeightDelta;
+            }
+
+            oldWeightValue = currentWeightValue;
+
+        }
     }
-
-   // delay(200);
-//    digitalWrite (dSuccess, LOW); 
-  }
-
 }
 
-void itemDetected(float itemWeight){
-  Serial.print("Item:\t");
-  Serial.print(currentItem, 1);
-  Serial.print("\tWeight:\t");
-  Serial.println(itemWeight, 1);
-  
-  if (currentItem < NUMITEMS(currentItemLoad)) {
-     Serial.println("Adding weight to array");
-    currentItemLoad[currentItem] = itemWeight;
-    /*
-    if (currentItem == 0) {
-      digitalWrite (d1, HIGH);   
+void itemDetected(float itemWeight) {
+    Serial.print("Item:\t");
+    Serial.print(currentItem, 1);
+    Serial.print("\tWeight:\t");
+    Serial.println(itemWeight, 1);
+
+    if (currentItem < NUMITEMS(currentItemLoad)) {
+        Serial.println("Adding weight to array");
+        currentItemLoad[currentItem] = itemWeight;
+
+        Serial.print("Items collected:\t");
+        Serial.print(currentItem + 1, 1);
+        Serial.print(" of ");
+        Serial.println(NUMITEMS(currentItemLoad), 1);
+
+        currentItem++;
     }
-    if (currentItem == 1) {
-      digitalWrite (d2, HIGH);   
+
+    if (currentItem >= NUMITEMS(currentItemLoad)) {
+        // check for solution and unload if fail:
+        if (checkSolution()) {
+            //openDoor();
+            openSecret();
+        } else {
+            unload();
+        }
     }
-    if (currentItem == 2) {
-      digitalWrite (d3, HIGH);   
-    }*/
-
-    Serial.print("Items collected:\t");
-    Serial.print(currentItem+1, 1);
-    Serial.print(" of ");
-    Serial.println(NUMITEMS(currentItemLoad), 1);
-  
-    currentItem++;
-    
-  }
-
-
-
-  if (currentItem >= NUMITEMS(currentItemLoad)) {
-    // check for solution and unload if fail:
-    if (checkSolution()) {
-      //openDoor();  
-      openSecret();
-    }
-    else {
-      unload();  
-    }
-    
-  }
-
-  
-
 }
 
 
+bool checkSolution() {
+    delay(1000);
+    Serial.println("Checking solution...");
 
-bool checkSolution(){
-  delay(1000);
-  Serial.println("Checking solution...");
-  /*
-  digitalWrite (d1, LOW);
-  digitalWrite (d2, LOW);
-  digitalWrite (d3, LOW);
-
-  */
-  bool puzzleSolved = true;
-  float delta = 0;
-  byte i=0;
-  for (i=0; i<NUMITEMS(currentItemLoad); i++ ) {
-    delta = currentItemLoad[i] - expectedItemWeights[i];
-    if ( abs(delta) > tolerance ) {
-      puzzleSolved = false;
+    bool puzzleSolved = true;
+    float delta = 0;
+    byte i = 0;
+    for (i = 0; i < NUMITEMS(currentItemLoad); i++) {
+        delta = currentItemLoad[i] - expectedItemWeights[i];
+        if (abs(delta) > tolerance) {
+            puzzleSolved = false;
+        }
     }
-  }
 
-  return puzzleSolved;
+    return puzzleSolved;
 }
 
 // upen and unload balls from the box
-void unload(){
-  byte i=0;
-  //Serial.println("Puzzle failed. Unloading...");
-  //digitalWrite (dFail, HIGH); 
-  reset1();
-  //myservo.attach(servoPort);
- // myservo.write(posOpen);
- // delay(2000);
- // digitalWrite (dFail, LOW); 
- // myservo.write(posClosed);
-  openDoor();
-  delay(DOOR_UNLOAD_DELAY);
-  closeDoor();
- // myservo.attach(0);
+void unload() {
+    byte i = 0;
+    //Serial.println("Puzzle failed. Unloading...");
+    reset1();
+
+    openDoor();
+    delay(DOOR_UNLOAD_DELAY);
+    closeDoor();
 }
 
-void reset1(){
-  Serial.print("RESET...:\t");
-
-  /*
-  digitalWrite (d1, LOW);
-  digitalWrite (d2, LOW);
-  digitalWrite (d3, LOW);
-*/
-/*
-  digitalWrite (dSuccess, HIGH); 
-  delay(50);
-  digitalWrite (dSuccess, LOW);
-  delay(50);
-  digitalWrite (dSuccess, HIGH); 
-  delay(50);
-  digitalWrite (dSuccess, LOW);
-  delay(50);
-  digitalWrite (dSuccess, HIGH); 
-  delay(50);
-  digitalWrite (dSuccess, LOW);
-  delay(50);
-  digitalWrite (relayPort, HIGH);
-  
-  myservo.attach(servoPort);
-  digitalWrite (dFail, LOW); 
-  myservo.write(posClosed);
-  delay(1000);
-  myservo.attach(0);
-
-  */
-  currentItem = 0;
-  byte i=0;
-  for (i=0; i<NUMITEMS(currentItemLoad); i++ ) {
-    currentItemLoad[i] = 0.0;
-  }
-  oldWeightValue = 0;
-  Serial.println("COMPLETE");
-
+void reset1() {
+    Serial.print("RESET...:\t");
+    currentItem = 0;
+    byte i = 0;
+    for (i = 0; i < NUMITEMS(currentItemLoad); i++) {
+        currentItemLoad[i] = 0.0;
+    }
+    oldWeightValue = 0;
+    Serial.println("COMPLETE");
 }
 
 // ====================== stpper =======================
 
-void setupStepper()
-{
-  Serial.println("Setup stepper");
-  // Set up I2C.
-  Wire.begin();
+void setupStepper() {
+    Serial.println("Setup stepper");
+    // Set up I2C.
+    Wire.begin();
 
-  // Give the Tic some time to start up.
-  delay(20);
+    // Give the Tic some time to start up.
+    delay(20);
 
-  // Set the Tic's current position to 0, so that when we command
-  // it to move later, it will move a predictable amount.
-  tic.haltAndSetPosition(0);
+    // Set the Tic's current position to 0, so that when we command
+    // it to move later, it will move a predictable amount.
+    tic.haltAndSetPosition(0);
 
-  // Tells the Tic that it is OK to start driving the motor.  The
-  // Tic's safe-start feature helps avoid unexpected, accidental
-  // movement of the motor: if an error happens, the Tic will not
-  // drive the motor again until it receives the Exit Safe Start
-  // command.  The safe-start feature can be disbled in the Tic
-  // Control Center.
-  tic.exitSafeStart();
+    // Tells the Tic that it is OK to start driving the motor.  The
+    // Tic's safe-start feature helps avoid unexpected, accidental
+    // movement of the motor: if an error happens, the Tic will not
+    // drive the motor again until it receives the Exit Safe Start
+    // command.  The safe-start feature can be disbled in the Tic
+    // Control Center.
+    tic.exitSafeStart();
 
-  closeDoor();
-  
+    closeDoor();
 }
 
-void loopStepper(){
- delayWhileResettingCommandTimeout(3000);  
+void loopStepper() {
+    delayWhileResettingCommandTimeout(3000);
 }
-
 
 
 // Sends a "Reset command timeout" command to the Tic.  We must
@@ -359,21 +291,18 @@ void loopStepper(){
 // error will happen.  The Tic's default command timeout period
 // is 1000 ms, but it can be changed or disabled in the Tic
 // Control Center.
-void resetCommandTimeout()
-{
-  tic.resetCommandTimeout();
+void resetCommandTimeout() {
+    tic.resetCommandTimeout();
 }
 
 // Delays for the specified number of milliseconds while
 // resetting the Tic's command timeout so that its movement does
 // not get interrupted by errors.
-void delayWhileResettingCommandTimeout(uint32_t ms)
-{
-  uint32_t start = millis();
-  do
-  {
-    resetCommandTimeout();
-  } while ((uint32_t)(millis() - start) <= ms);
+void delayWhileResettingCommandTimeout(uint32_t ms) {
+    uint32_t start = millis();
+    do {
+        resetCommandTimeout();
+    } while ((uint32_t)(millis() - start) <= ms);
 }
 
 // Polls the Tic, waiting for it to reach the specified target
@@ -381,76 +310,54 @@ void delayWhileResettingCommandTimeout(uint32_t ms)
 // probably go into safe-start mode and never reach its target
 // position, so this function will loop infinitely.  If that
 // happens, you will need to reset your Arduino.
-void waitForPosition(int32_t targetPosition)
-{
-  do
-  {
-    resetCommandTimeout();
-  } while (tic.getCurrentPosition() != targetPosition);
+void waitForPosition(int32_t targetPosition) {
+    do {
+        resetCommandTimeout();
+    } while (tic.getCurrentPosition() != targetPosition);
 }
 
-void openDoor(){
-  Serial.println("Opening Door");
-  tic.setTargetPosition(DOOR_OPENED_POS);
-  //waitForPosition(DOOR_OPENED_POS);
-  delayWhileResettingCommandTimeout(1000);
+void openDoor() {
+    Serial.println("Opening Door");
+    tic.setTargetPosition(DOOR_OPENED_POS);
+    //waitForPosition(DOOR_OPENED_POS);
+    delayWhileResettingCommandTimeout(1000);
 }
 
-void closeDoor(){
-  Serial.println("Closing Door");
-  tic.setTargetPosition(DOOR_CLOSED_POS);
-  //waitForPosition(DOOR_CLOSED_POS);
-  delayWhileResettingCommandTimeout(1000);
+void closeDoor() {
+    Serial.println("Closing Door");
+    tic.setTargetPosition(DOOR_CLOSED_POS);
+    //waitForPosition(DOOR_CLOSED_POS);
+    delayWhileResettingCommandTimeout(1000);
 }
 
-void openSecret(){
-  secretOpen = 1;
-  Serial.println("===================================================");
-  Serial.println("================ OPENING SECRET ===================");
-  Serial.println("===================================================");
-  move = SC;
-  spiDo();
-  delay(2000);
-  move = 0;
-  spiDo();
-  delay(1000);
+void openSecret() {
+    secretOpen = 1;
+    Serial.println("===================================================");
+    Serial.println("================ OPENING SECRET ===================");
+    Serial.println("===================================================");
+    move = SC;
+    spiDo();
+    delay(2000);
+    move = 0;
+    spiDo();
+    delay(1000);
 }
 
 void setup() {
-
     Serial.begin(115200);
     Serial.println("Setup start");
     SPI.begin();
     pinMode(regOut, OUTPUT);
     pinMode(regIn, OUTPUT);
 
-    // added by a
-    /*
-    pinMode(13, OUTPUT);
-    pinMode(10, OUTPUT);
-    pinMode(11, OUTPUT);
-   digitalWrite(regIn, LOW);
-   digitalWrite(regIn, HIGH);
-   digitalWrite(regOut, LOW);
-   digitalWrite(regOut, HIGH);
-
-   digitalWrite(13, HIGH);
-   digitalWrite(10, HIGH);
-   digitalWrite(11, HIGH);
-   */
     spiDo();
     setupScales();
     setupStepper();
     unload();
-
 }
 
 void loop() {
-
-
-
-
-//    color_sensor_loop();
+    //    color_sensor_loop();
     // scale_loop();
 
     milli = millis();
@@ -488,7 +395,7 @@ void loop() {
         if (joy & JF)move |= MF;
         if (joy & JB)move |= MB;
 
-        if (catchingStep == CATCH_NONE && (joy & JD) && distance>=60) {
+        if (catchingStep == CATCH_NONE && (joy & JD) && distance >= 60) {
             catchingStep = CATCH_U2D;
         }
     }
@@ -524,10 +431,8 @@ void loop() {
     delay(50);
 
 // measure scales each second, not each loop
-    if (millis() - scaleTiming > 1000){
+    if (millis() - scaleTiming > 1000) {
         scaleTiming = millis();
         loopScales();
     }
-
 }
-

@@ -26,15 +26,8 @@ float currentItemLoad[4] = {0, 0, 0, 0};
 byte currentItem = 0;
 float oldWeightValue = 0;
 float currentWeightValue = 0;
-// current weight delta
 float currentWeightDelta = 0;
-// calculated item weight
-float currentItemWeight = 0;
-float previousItemWeight = 0;
 int calmdownTime = 1500;
-bool shaking = true;
-byte calmDownCycles = 3;
-byte shakingCounter = 1;
 #define NUMITEMS(arg) ((unsigned int) (sizeof (arg) / sizeof (arg [0])))
 unsigned long scaleTiming;
 byte secretOpen = 0;
@@ -104,14 +97,26 @@ const byte CATCH_D2U = 4;
 const byte CATCH_UP = 5;
 
 byte move = 0;
-byte catching = 0;
 byte catchingStep = CATCH_NONE;
 byte joy, end;
 byte jState = 0;
 byte eState = 0;
 
-unsigned long milli;
-unsigned long startCatch;
+void spiDo();
+void setup();
+void loop();
+void setupScales();
+void loopScales();
+void itemDetected(float itemWeight);
+void unload();
+void reset1();
+void setupStepper();
+void resetCommandTimeout();
+void delayWhileResettingCommandTimeout(uint32_t ms);
+void openDoor();
+void closeDoor();
+void openSecret();
+bool checkSolution();
 
 void spiDo() {
     // PL to LOW -> async load via D0-D7
@@ -148,7 +153,6 @@ void loopScales() {
     Serial.print("Measure:\t");
 
     currentWeightValue = scale.get_units(2);
-    //digitalWrite (dSuccess, HIGH);
     Serial.print("currentWeightValue:\t");
     Serial.println(currentWeightValue, 1);
 
@@ -178,7 +182,6 @@ void loopScales() {
 
             if (currentWeightDelta > minWeightToDetect) {
                 itemDetected(currentWeightDelta);
-                previousItemWeight = currentWeightDelta;
             }
 
             oldWeightValue = currentWeightValue;
@@ -208,7 +211,6 @@ void itemDetected(float itemWeight) {
     if (currentItem >= NUMITEMS(currentItemLoad)) {
         // check for solution and unload if fail:
         if (checkSolution()) {
-            //openDoor();
             openSecret();
         } else {
             unload();
@@ -236,7 +238,6 @@ bool checkSolution() {
 
 // upen and unload balls from the box
 void unload() {
-    byte i = 0;
     //Serial.println("Puzzle failed. Unloading...");
     reset1();
 
@@ -281,11 +282,6 @@ void setupStepper() {
     closeDoor();
 }
 
-void loopStepper() {
-    delayWhileResettingCommandTimeout(3000);
-}
-
-
 // Sends a "Reset command timeout" command to the Tic.  We must
 // call this at least once per second, or else a command timeout
 // error will happen.  The Tic's default command timeout period
@@ -305,28 +301,15 @@ void delayWhileResettingCommandTimeout(uint32_t ms) {
     } while ((uint32_t)(millis() - start) <= ms);
 }
 
-// Polls the Tic, waiting for it to reach the specified target
-// position.  Note that if the Tic detects an error, the Tic will
-// probably go into safe-start mode and never reach its target
-// position, so this function will loop infinitely.  If that
-// happens, you will need to reset your Arduino.
-void waitForPosition(int32_t targetPosition) {
-    do {
-        resetCommandTimeout();
-    } while (tic.getCurrentPosition() != targetPosition);
-}
-
 void openDoor() {
     Serial.println("Opening Door");
     tic.setTargetPosition(DOOR_OPENED_POS);
-    //waitForPosition(DOOR_OPENED_POS);
     delayWhileResettingCommandTimeout(1000);
 }
 
 void closeDoor() {
     Serial.println("Closing Door");
     tic.setTargetPosition(DOOR_CLOSED_POS);
-    //waitForPosition(DOOR_CLOSED_POS);
     delayWhileResettingCommandTimeout(1000);
 }
 
@@ -357,17 +340,13 @@ void setup() {
 }
 
 void loop() {
-    //    color_sensor_loop();
-    // scale_loop();
-
-    milli = millis();
     spiDo();
 
     if (secretOpen == 1) {
         // Serial.print("Secret opened. nothing to do");
         return;
     }
-    //return;
+
     unsigned int distance = sonar.ping_cm();
 
     move = 0;

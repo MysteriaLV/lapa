@@ -15,12 +15,12 @@
           <FilterInfo>
             <option name="description" value="" />
             <option name="name" value="PIO Conf" />
-            <option name="regExp" value="$FILE_PATH$:^platofrmio" />
+            <option name="regExp" value="$FILE_PATH$:^platformio" />
           </FilterInfo>
         </array>
       </option>
       <option name="outputFromStdout" value="false" />
-      <option name="program" value="/Users/alex/.platformio/penv/bin/platformio" />
+      <option name="program" value="C:\\Python27\\Scripts\\platformio.exe" />
       <option name="scopeName" value="Project Files" />
       <option name="trackOnlyRoot" value="false" />
       <option name="workingDir" value="$PROJECT_DIR$" />

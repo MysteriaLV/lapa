@@ -1,7 +1,5 @@
 #include "Arduino.h"
 #include <SPI.h>
-// # include "color_sensor.h"
-//#include "scale.h" 
 #include <NewPing.h>
 #include "HX711.h"
 #include <Tic.h>

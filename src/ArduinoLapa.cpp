@@ -3,7 +3,9 @@
 #include <NewPing.h>
 #include "HX711.h"
 #include <Tic.h>
-#include "lapa_modbus.h"
+
+extern void modbus_setup();
+extern void modbus_loop();
 
 // ============= sonar ===========================
 

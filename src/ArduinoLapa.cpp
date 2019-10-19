@@ -3,9 +3,7 @@
 #include <NewPing.h>
 #include "HX711.h"
 #include <Tic.h>
-
-#include <Modbus.h>
-#include <ModbusSerial.h>
+#include "lapa_modbus.h"
 
 // ============= sonar ===========================
 
@@ -45,7 +43,7 @@ TicI2C tic;
 const byte regOut = 10;
 //const byte regIn = 9;
 // D9 changed to D4 after moving from Nano to Uno
- const byte regIn = 4;
+const byte regIn = 4;
 
 // D13 - Clock pin 
 // D10 latch
@@ -109,10 +107,15 @@ byte jState = 0;
 byte eState = 0;
 
 void spiDo();
+
 void setup();
+
 void loop();
+
 void setupScales();
+
 void loopScales();
+
 void itemDetected(float itemWeight);
 void unload();
 void reset1();
@@ -163,9 +166,9 @@ void loopScales() {
     Serial.println(currentWeightValue, 1);
 
     if (currentWeightValue < 0 - tolerance) {
-       Serial.print("Resetting scale tare:\t");
-       scale.tare(); 
-       return; 
+        Serial.print("Resetting scale tare:\t");
+        scale.tare();
+        return;
     }
 
     // if all items were removed manually();
@@ -251,7 +254,7 @@ bool checkSolution() {
 
 // upen and unload balls from the box
 void unload() {
-    
+
     reset1();
 
     openDoor();
@@ -311,7 +314,7 @@ void delayWhileResettingCommandTimeout(uint32_t ms) {
     uint32_t start = millis();
     do {
         resetCommandTimeout();
-    } while ((uint32_t)(millis() - start) <= ms);
+    } while ((uint32_t) (millis() - start) <= ms);
 }
 
 void openDoor() {
@@ -348,10 +351,12 @@ void openSecret() {
 void setup() {
     Serial.begin(115200);
     Serial.println("Setup start");
+    modbus_setup();
+
     pinMode(SECRET_RELAY_PIN, OUTPUT);
     digitalWrite(SECRET_RELAY_PIN, HIGH);
 
-    
+
     SPI.begin();
     pinMode(regOut, OUTPUT);
     pinMode(regIn, OUTPUT);
@@ -363,6 +368,7 @@ void setup() {
 }
 
 void loop() {
+    modbus_loop();
     spiDo();
 
     if (secretOpen == 1) {

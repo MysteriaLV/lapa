@@ -4,6 +4,8 @@
 #include "HX711.h"
 #include <Tic.h>
 
+#include <Modbus.h>
+#include <ModbusSerial.h>
 
 // ============= sonar ===========================
 
@@ -19,7 +21,7 @@ HX711 scale(A1, A0);
 
 float tolerance = 10;
 float minWeightToDetect = 20;
-float expectedItemWeights[4] = {69, 40, 83, 40};
+float expectedItemWeights[4] = {69, 40, 88, 40};
 float currentItemLoad[4] = {0, 0, 0, 0};
 byte currentItem = 0;
 float oldWeightValue = 0;
@@ -36,16 +38,22 @@ TicI2C tic;
 #define DOOR_UNLOAD_DELAY 3000
 // initially we assume box door is closed when switching on arduino
 #define DOOR_CLOSED_POS 0
-#define DOOR_OPENED_POS 3000
+#define DOOR_OPENED_POS 3450
 
 // ============= manipulator =======================
 
 const byte regOut = 10;
-const byte regIn = 9;
+//const byte regIn = 9;
+// D9 changed to D4 after moving from Nano to Uno
+ const byte regIn = 4;
 
 // D13 - Clock pin 
 // D10 latch
 // D11 data
+
+
+// ============= secret door =======================
+#define SECRET_RELAY_PIN 3
 
 
 /*
@@ -154,9 +162,15 @@ void loopScales() {
     Serial.print("currentWeightValue:\t");
     Serial.println(currentWeightValue, 1);
 
+    if (currentWeightValue < 0 - tolerance) {
+       Serial.print("Resetting scale tare:\t");
+       scale.tare(); 
+       return; 
+    }
+
     // if all items were removed manually();
     if (currentItem > 0 && abs(currentWeightValue) < tolerance) {
-
+        Serial.print("Items removed manually?:\t");
         reset1();
     } else {
 
@@ -211,6 +225,7 @@ void itemDetected(float itemWeight) {
         if (checkSolution()) {
             openSecret();
         } else {
+            Serial.println("Puzzle failed. Unloading...");
             unload();
         }
     }
@@ -236,7 +251,7 @@ bool checkSolution() {
 
 // upen and unload balls from the box
 void unload() {
-    //Serial.println("Puzzle failed. Unloading...");
+    
     reset1();
 
     openDoor();
@@ -316,17 +331,27 @@ void openSecret() {
     Serial.println("===================================================");
     Serial.println("================ OPENING SECRET ===================");
     Serial.println("===================================================");
+
+    digitalWrite(SECRET_RELAY_PIN, LOW);
+    delay(1000);
+    digitalWrite(SECRET_RELAY_PIN, HIGH);
+    /*
     move = SC;
     spiDo();
     delay(2000);
     move = 0;
     spiDo();
     delay(1000);
+    */
 }
 
 void setup() {
     Serial.begin(115200);
     Serial.println("Setup start");
+    pinMode(SECRET_RELAY_PIN, OUTPUT);
+    digitalWrite(SECRET_RELAY_PIN, HIGH);
+
+    
     SPI.begin();
     pinMode(regOut, OUTPUT);
     pinMode(regIn, OUTPUT);
@@ -350,6 +375,7 @@ void loop() {
     move = 0;
     if (catchingStep != CATCH_NONE) {
         if (catchingStep == CATCH_U2D) {
+            Serial.print("CATCH Mode U2D");
             move = MD;
             if (end & ED) {
                 Serial.print("CATCH DOWN TO UP");

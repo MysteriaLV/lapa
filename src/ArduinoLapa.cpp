@@ -42,10 +42,8 @@ TicI2C tic;
 
 // ============= manipulator =======================
 
-const byte regOut = 10;
-//const byte regIn = 9;
-// D9 changed to D4 after moving from Nano to Uno
-const byte regIn = 4;
+const byte regOut = PIN5;
+const byte regIn = PIN4;
 
 // D13 - Clock pin 
 // D10 latch
@@ -53,7 +51,7 @@ const byte regIn = 4;
 
 
 // ============= secret door =======================
-#define SECRET_RELAY_PIN 3
+#define SECRET_RELAY_PIN PIN3
 
 
 /*
@@ -109,15 +107,10 @@ byte jState = 0;
 byte eState = 0;
 
 void spiDo();
-
 void setup();
-
 void loop();
-
 void setupScales();
-
 void loopScales();
-
 void itemDetected(float itemWeight);
 void unload();
 void reset1();

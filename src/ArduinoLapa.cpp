@@ -42,12 +42,12 @@ TicI2C tic;
 
 // ============= manipulator =======================
 
-const byte regOut = PIN5;
-const byte regIn = PIN4;
+const byte regOut = 10;
+const byte regIn =  4;
 
 // D13 - Clock pin 
-// D10 latch
 // D11 data
+// D10 latch
 
 
 // ============= secret door =======================

@@ -21,7 +21,7 @@ HX711 scale(A1, A0);
 
 float tolerance = 10;
 float minWeightToDetect = 20;
-float expectedItemWeights[4] = {69, 40, 88, 40};
+float expectedItemWeights[4] = {69, 63, 90, 43};
 float currentItemLoad[4] = {0, 0, 0, 0};
 byte currentItem = 0;
 float oldWeightValue = 0;

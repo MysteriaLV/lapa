@@ -5,6 +5,7 @@
 #include <Tic.h>
 
 extern void modbus_setup();
+
 extern void modbus_loop();
 
 // ============= sonar ===========================
@@ -19,9 +20,9 @@ NewPing sonar(US_TRIGGER_PIN, US_ECHO_PIN, US_MAX_DISTANCE);
 
 HX711 scale(A1, A0);
 
-float tolerance = 10;
+float tolerance = 7;
 float minWeightToDetect = 20;
-float expectedItemWeights[4] = {68, 34, 67, 36};
+float expectedItemWeights[4] = {68, 60, 67, 36};
 float currentItemLoad[4] = {0, 0, 0, 0};
 byte currentItem = 0;
 float oldWeightValue = 0;
@@ -43,7 +44,7 @@ TicI2C tic;
 // ============= manipulator =======================
 
 const byte regOut = 10;
-const byte regIn =  4;
+const byte regIn = 4;
 
 // D13 - Clock pin 
 // D11 data
@@ -234,17 +235,26 @@ bool checkSolution() {
     delay(1000);
     Serial.println("Checking solution...");
 
-    bool puzzleSolved = true;
-    float delta = 0;
-    byte i = 0;
-    for (i = 0; i < NUMITEMS(currentItemLoad); i++) {
-        delta = currentItemLoad[i] - expectedItemWeights[i];
-        if (abs(delta) > tolerance) {
-            puzzleSolved = false;
-        }
+    for (byte i = 0; i < NUMITEMS(currentItemLoad); i++) {
+        float current = currentItemLoad[i];
+        float expected = expectedItemWeights[i];
+        float delta = current - expected;
+
+        Serial.print("Comparing ");
+        Serial.println(i);
+
+        Serial.print("   current ");
+        Serial.println(current);
+
+        Serial.print("   expected ");
+        Serial.println(expected);
+
+        if (abs(delta) > tolerance)
+            return false;
+        
     }
 
-    return puzzleSolved;
+    return true;
 }
 
 // upen and unload balls from the box

@@ -13,11 +13,11 @@ enum {
 
 ModbusSerial mb;
 
-#define SSerialGND       10
+//#define SSerialGND       10 - not used, direct power
 #define SSerialRX        9  //Serial Receive pin
 #define SSerialTX        8  //Serial Transmit pin
-#define SSerialVCC       7
-#define SSerialTxControl 6   //RS485 Direction control
+//#define SSerialVCC       7 - not used, direct power
+#define SSerialTxControl (-1) // was 6   //RS485 Direction control, not used in new modbus chip
 SoftwareSerial RS485Serial(SSerialRX, SSerialTX); // RX, TX
 
 // Action handler. Add all your actions mapped by action_id in rs485_node of Lua script

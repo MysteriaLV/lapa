@@ -402,7 +402,7 @@ void loop() {
                 catchingStep = CATCH_NONE;
         }
     }
-    if (catchingStep == CATCH_NONE || catchingStep == CATCH_D2U || catchingStep == CATCH_UP) {
+    if (catchingStep == CATCH_NONE || catchingStep == CATCH_UP) {
         //if (joy & JL) {  move = SC; return 0; } // ML;
         if (joy & JL)move |= ML;
         if (joy & JR)move |= MR;

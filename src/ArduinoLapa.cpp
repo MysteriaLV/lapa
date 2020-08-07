@@ -5,7 +5,6 @@
 #include <Tic.h>
 
 extern void modbus_setup();
-
 extern void modbus_loop();
 
 // ============= sonar ===========================
@@ -18,11 +17,12 @@ NewPing sonar(US_TRIGGER_PIN, US_ECHO_PIN, US_MAX_DISTANCE);
 
 // ============= scales ===========================
 
-HX711 scale(A1, A0);
+HX711 scale;
 
 float tolerance = 7;
 float minWeightToDetect = 20;
-float expectedItemWeights[4] = {105, 93, 78, 43}; //103, 100, 78, 42
+// Синий(103) зелёный(42) желтый(77) фиолетовый(93)
+float expectedItemWeights[4] = {103, 42, 77, 93};
 float currentItemLoad[4] = {0, 0, 0, 0};
 byte currentItem = 0;
 float oldWeightValue = 0;
@@ -81,8 +81,8 @@ const byte ML = B00000001;
 const byte MR = B00000010;
 const byte MB = B00000100;
 const byte MF = B00001000;
-const byte MU = B00010000;
-const byte MD = B00100000;
+const byte MD = B00010000;
+const byte MU = B00100000;
 const byte CA = B01000000;
 const byte SC = B10000000;
 
@@ -149,9 +149,10 @@ void spiDo() {
 
 void setupScales() {
     Serial.println("Setup scales");
+    scale.begin(A1, A0);
     scale.set_scale(2280.f);
     delay(500); // this is for scale to warmup
-    scale.tare();
+    scale.tare(20);
 }
 
 void loopScales() {
@@ -251,7 +252,6 @@ bool checkSolution() {
 
         if (abs(delta) > tolerance)
             return false;
-        
     }
 
     return true;
@@ -270,8 +270,7 @@ void unload() {
 void reset1() {
     Serial.print("RESET...:\t");
     currentItem = 0;
-    byte i = 0;
-    for (i = 0; i < NUMITEMS(currentItemLoad); i++) {
+    for (byte i = 0; i < NUMITEMS(currentItemLoad); i++) {
         currentItemLoad[i] = 0.0;
     }
     oldWeightValue = 0;
